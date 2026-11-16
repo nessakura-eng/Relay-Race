@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Club Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--navy:#14254a;--navy2:#0d1a36;--green:#22b573;--white:#f5f8ff;--red:#ff6b6b}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 30% 20%,#1f3770 0%,var(--navy) 45%,var(--navy2) 100%);
+    font-family:Inter,system-ui,sans-serif;color:var(--white);padding:24px}
+  .card{width:100%;max-width:420px;text-align:center}
+  .tag{display:inline-block;background:var(--green);color:var(--navy2);font-family:Orbitron,sans-serif;
+    font-weight:900;padding:8px 18px;border-radius:6px;transform:skew(-10deg);letter-spacing:1px;font-size:14px}
+  h1{font-family:Orbitron,sans-serif;font-weight:900;font-size:34px;margin:18px 0 6px}
+  h1 span{color:var(--green)}
+  p.sub{opacity:.8;margin:0 0 28px;line-height:1.5}
+  .digits{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+  .digits input{width:64px;height:80px;font-size:40px;text-align:center;font-family:Orbitron,sans-serif;
+    border-radius:12px;border:2px solid #3a5694;background:#0b1630;color:var(--white);outline:none;caret-color:var(--green)}
+  .digits input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(34,181,115,.3)}
+  button{width:100%;padding:16px;font-size:18px;font-weight:600;border:none;border-radius:12px;
+    background:var(--green);color:var(--navy2);cursor:pointer;font-family:Orbitron,sans-serif;letter-spacing:1px}
+  button:active{transform:scale(.98)}
+  .msg{min-height:24px;margin-top:16px;font-weight:600}
+  .err{color:var(--red)}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+  .win{display:none}
+  .win .lock{font-size:64px}
+  .phrase{margin:18px 0;padding:24px 18px;border:3px dashed var(--green);border-radius:14px;
+    font-family:Orbitron,sans-serif;font-size:24px;line-height:1.4;background:rgba(34,181,115,.08)}
+  .again{background:transparent;color:var(--white);border:2px solid #3a5694;font-size:14px;margin-top:10px}
+  footer{margin-top:28px;font-size:12px;opacity:.55}
+</style>
+</head>
+<body>
+<main class="card">
+  <section id="entry">
+    <div class="tag">FGCU RELAY RACE</div>
+    <h1>Math Club <span>Vault</span> 🔐</h1>
+    <p class="sub">Solve your puzzles, then enter your team's 4-digit code to unlock the secret message.</p>
+    <form id="f" autocomplete="off">
+      <div class="digits" id="digits">
+        <input inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 1">
+        <input inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 2">
+        <input inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 3">
+        <input inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="Digit 4">
+      </div>
+      <button type="submit">UNLOCK</button>
+    </form>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="win" id="win">
+    <div class="lock">🔓</div>
+    <h1>Vault <span>cracked!</span></h1>
+    <p class="sub">Show this screen to a Math Club volunteer to get your Monster:</p>
+    <div class="phrase" id="phrase"></div>
+    <button class="again" id="again">Lock vault</button>
+  </section>
+  <footer>Math Club at FGCU · with FGCU Esports &amp; CSSEC</footer>
+</main>
+
+<script>
+const VAULT = {
+  "b681cae8ee098b32e9ae52a8089ec89144f722f50b4e78869bca563914f98f8e": "SS4c+yrP7IbGCmfKn4jrOrufMAHOp9fTvoNi8pw=",
+  "79c6719576e18f8593d6c4563bdd3289ae62b4b9bbd74e9e86b493893c52b553": "uw1H0CW9LKDTlwZRswBrlEkvcE57WkQx32xa",
+  "56182d5bcb8a45a51d0bd4b0e74e46fcb5df0a1e64e4aec19ff50b287826f141": "390WOZ+V4HCdV6wYGsCvmVsVO2sG"
+};
+const enc = new TextEncoder();
+async function sha(s){ return new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s))); }
+const hex = b => [...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+
+const inputs = [...document.querySelectorAll('#digits input')];
+inputs.forEach((inp,i)=>{
+  inp.addEventListener('input',()=>{
+    inp.value = inp.value.replace(/\D/g,'').slice(-1);
+    if(inp.value && i<3) inputs[i+1].focus();
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Backspace' && !inp.value && i>0) inputs[i-1].focus();
+  });
+  inp.addEventListener('paste',e=>{
+    const t=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,4);
+    if(t.length){ e.preventDefault(); t.split('').forEach((c,j)=>inputs[j]&&(inputs[j].value=c)); inputs[Math.min(t.length,3)].focus(); }
+  });
+});
+
+const msg = document.getElementById('msg');
+document.getElementById('f').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const code = inputs.map(i=>i.value).join('');
+  if(code.length<4){ msg.className='msg err'; msg.textContent='Enter all 4 digits.'; return; }
+  const h = hex(await sha('mathclub-vault:'+code));
+  if(!VAULT[h]){
+    msg.className='msg err'; msg.textContent='❌ Wrong code. Recheck your answers!';
+    const d=document.getElementById('digits'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+    inputs.forEach(i=>i.value=''); inputs[0].focus();
+    return;
+  }
+  const k = await sha('key:'+code);
+  const x = Uint8Array.from(atob(VAULT[h]), c=>c.charCodeAt(0));
+  const p = new TextDecoder().decode(x.map((b,i)=>b ^ k[i%32]));
+  document.getElementById('phrase').textContent = '“' + p + '”';
+  document.getElementById('entry').style.display='none';
+  document.getElementById('win').style.display='block';
+  msg.textContent='';
+});
+document.getElementById('again').addEventListener('click',()=>{
+  inputs.forEach(i=>i.value='');
+  document.getElementById('win').style.display='none';
+  document.getElementById('entry').style.display='block';
+  inputs[0].focus();
+});
+</script>
+</body>
+</html>
